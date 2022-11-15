@@ -1,0 +1,55 @@
+#IBM Watson IOT Platform
+#pip install wiotp-sdk
+from geopy.geocoders import Nominatim
+import wiotp.sdk.device
+import time
+import random
+myConfig = {
+    "identity": {
+        "orgId": "4ipem5",
+        "typeId": "PNT2022MID40473",
+        "deviceId":"1234"
+    },
+    "auth": {
+        "token": "8072679097"
+    }
+}
+
+def myCommandCallback(cmd):
+    print("Message received from IBM IoT Platform: %s" % cmd.data['command'])
+    m=cmd.data['command']
+
+client = wiotp.sdk.device.DeviceClient(config=myConfig, logHandlers=None)
+client.connect()
+
+while True:
+    temp=random.randint(-20,125)
+    hum=random.randint(0,100)
+    g1=random.randint(0,100)
+    g2=random.randint(0,100)
+    f="EMERGENCY"
+    loc = Nominatim(user_agent="GetLoc")
+    getLoc = loc.geocode("kanchipuram")
+    getLoc1= loc.geocode("chennai")
+    lat=getLoc.latitude
+    log=getLoc.longitude
+    lat1=getLoc1.latitude
+    log1=getLoc1.longitude
+   
+    myData={'temperature':temp, 'humidity':hum,'gas_1':g1}
+    if g1 > 40:
+        myData={'alert g_1':f,'latitude':lat,'longitude':log}
+    else:
+        myData={'temperature':temp, 'humidity':hum,'gas_1':g1}
+    if g2 > 40:
+        myData1={'alert g_2':f,'latitude':lat1,'longitude':log1}
+    else:
+        myData1={'temperature':temp, 'humidity':hum,'gas_2':g2}
+       
+    client.publishEvent(eventId="status", msgFormat="json", data=myData, qos=0, onPublish=None)
+    client.publishEvent(eventId="status", msgFormat="json", data=myData1, qos=0, onPublish=None)
+    print("Published data Successfully: %s", myData)
+    print("Published data successfully: %s", myData1)
+    client.commandCallback = myCommandCallback
+    time.sleep(3)
+client.disconnect()
